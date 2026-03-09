@@ -1,0 +1,29 @@
+service: whatsapp-ai-saas
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev
+  environment:
+    NODE_ENV: ${self:provider.stage}
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+
+functions:
+  whatsappWebhook:
+    handler: src/handlers/whatsappWebhook.handler
+    events:
+      - http:
+          path: webhook
+          method: post
+          cors: true
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    host: localhost

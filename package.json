@@ -1,0 +1,33 @@
+{
+  "name": "whatsapp-ai-saas",
+  "version": "1.0.0",
+  "description": "WhatsApp AI SaaS - Serverless Node.js + TypeScript project",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "serverless offline",
+    "deploy": "serverless deploy",
+    "logs": "serverless logs -f whatsappWebhook",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "typescript",
+    "whatsapp"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-lambda": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.136",
+    "@types/node": "^20.11.24",
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.3",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.3.3"
+  }
+}
