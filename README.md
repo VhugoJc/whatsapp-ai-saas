@@ -44,23 +44,86 @@ npm start
 
 This will start the serverless offline server on `http://localhost:3000`.
 
-## Testing
+## Testing with Postman
 
-Test the webhook endpoint with a POST request:
-
-```bash
-curl -X POST http://localhost:3000/dev/webhook \
-  -H "Content-Type: application/json" \
-  -d '{"message": "test"}'
+### Endpoint URL
+```
+POST http://localhost:3000/dev/webhook
 ```
 
-Expected response:
+### Headers
+```
+Content-Type: application/json
+```
+
+### Test Payload (WhatsApp Cloud API format)
+```json
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "from": "5214441234567",
+          "text": { "body": "hola" },
+          "type": "text"
+        }]
+      }
+    }]
+  }]
+}
+```
+
+### Expected Response
 ```json
 {
   "message": "Bot running",
   "timestamp": "2026-03-08T...",
-  "requestId": "..."
+  "requestId": "...",
+  "processed": {
+    "phone": "5214441234567",
+    "messageText": "hola",
+    "hasMessage": true
+  }
 }
+```
+
+## WhatsApp Cloud API Integration
+
+The webhook handler now supports WhatsApp Cloud API webhook payloads and extracts:
+
+### Extracted Data
+- **Phone Number**: User's phone number (from field)
+- **Message Text**: Text content of the message
+- **Message Type**: Type of message (text, image, etc.)
+
+### Payload Format
+```json
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "from": "5214441234567",
+          "text": { "body": "hola" },
+          "type": "text"
+        }]
+      }
+    }]
+  }]
+}
+```
+
+### Logging Output
+When a WhatsApp message is received, you'll see logs like:
+```
+📱 WhatsApp Message Extracted:
+  Phone Number: 5214441234567
+  Message Text: hola
+  Message Type: text
+
+🎯 WhatsApp Data Successfully Extracted:
+📞 Phone: 5214441234567
+💬 Message: hola
 ```
 
 ## API Endpoint

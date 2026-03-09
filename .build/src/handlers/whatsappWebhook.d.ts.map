@@ -1,1 +1,0 @@
-{"version":3,"file":"whatsappWebhook.d.ts","sourceRoot":"","sources":["../../../src/handlers/whatsappWebhook.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,oBAAoB,EAAE,qBAAqB,EAAE,OAAO,EAAE,MAAM,YAAY,CAAC;AAElF;;;GAGG;AACH,eAAO,MAAM,OAAO,GAClB,OAAO,oBAAoB,EAC3B,SAAS,OAAO,KACf,OAAO,CAAC,qBAAqB,CA4E/B,CAAC"}
