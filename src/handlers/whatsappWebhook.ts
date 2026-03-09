@@ -1,4 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import { sendWhatsappMessage } from '../integrations/whatsapp/sendMessage';
+import { resolveTenant } from '../tenants/resolveTenant';
 
 /**
  * WhatsApp Cloud API Webhook Payload Interfaces
@@ -16,7 +18,10 @@ interface WhatsAppMessage {
 interface WhatsAppValue {
   messages?: WhatsAppMessage[];
   contacts?: any[];
-  metadata?: any;
+  metadata?: {
+    phone_number_id?: string;
+    display_phone_number?: string;
+  };
 }
 
 interface WhatsAppChange {
@@ -35,30 +40,43 @@ interface WhatsAppWebhookPayload {
 }
 
 /**
- * Extract phone number and message text from WhatsApp Cloud API payload
+ * Extract phone number, message text, and tenant info from WhatsApp Cloud API payload
  */
-function extractWhatsAppData(payload: WhatsAppWebhookPayload): { phone: string | null; messageText: string | null } {
+function extractWhatsAppData(payload: WhatsAppWebhookPayload): { 
+  phone: string | null; 
+  messageText: string | null; 
+  phoneNumberId: string | null;
+  tenantId: string | null;
+} {
   try {
     // Navigate through the nested payload structure
     const entry = payload.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
     const message = value?.messages?.[0];
+    const metadata = value?.metadata;
+
+    // Extract phone_number_id for tenant resolution
+    const phoneNumberId = metadata?.phone_number_id || null;
+    
+    // Resolve tenant information
+    const tenant = phoneNumberId ? resolveTenant(phoneNumberId) : null;
+    const tenantId = tenant?.tenantId || null;
 
     if (!message) {
       console.log('[WhatsApp] No message found in payload');
-      return { phone: null, messageText: null };
+      return { phone: null, messageText: null, phoneNumberId, tenantId };
     }
 
     const phone = message.from || null;
     const messageText = message.text?.body || null;
 
-    console.log(`[WhatsApp] Message extracted - Phone: ${phone}, Text: "${messageText}", Type: ${message.type || 'text'}`);
+    console.log(`[WhatsApp] Message extracted - Phone: ${phone}, Text: "${messageText}", Type: ${message.type || 'text'}, Tenant: ${tenantId || 'unknown'}`);
 
-    return { phone, messageText };
+    return { phone, messageText, phoneNumberId, tenantId };
   } catch (error) {
     console.error('[WhatsApp] Error extracting data:', error instanceof Error ? error.message : 'Unknown error');
-    return { phone: null, messageText: null };
+    return { phone: null, messageText: null, phoneNumberId: null, tenantId: null };
   }
 }
 
@@ -118,14 +136,31 @@ export const handler = async (
       console.log(`[PAYLOAD] ${requestId} - Empty request body`);
     }
 
-    // Extract phone number and message text
-    const { phone, messageText } = extractWhatsAppData(payload);
+    // Extract phone number, message text, and tenant information
+    const { phone, messageText, phoneNumberId, tenantId } = extractWhatsAppData(payload);
 
-    // Log the result
+    // Log the result with tenant information
     if (phone && messageText) {
-      console.log(`[SUCCESS] ${requestId} - WhatsApp message processed: ${phone} -> "${messageText}"`);
+      console.log(`[SUCCESS] ${requestId} - WhatsApp message processed: ${phone} -> "${messageText}" [Tenant: ${tenantId || 'unknown'}]`);
+      
+      // Send automatic reply in Spanish
+      const replyMessage = "Hola 👋 soy el asistente de la academia. ¿En qué puedo ayudarte?";
+      
+      try {
+        console.log(`[WhatsApp] Sending auto-reply to ${phone} for tenant: ${tenantId || 'unknown'}`);
+        const sendResult = await sendWhatsappMessage(phone, replyMessage);
+        
+        if (sendResult.success) {
+          console.log(`[SUCCESS] ${requestId} - Auto-reply sent successfully - Message ID: ${sendResult.messageId} [Tenant: ${tenantId || 'unknown'}]`);
+        } else {
+          console.error(`[ERROR] ${requestId} - Failed to send auto-reply [Tenant: ${tenantId || 'unknown'}]:`, sendResult.error);
+        }
+      } catch (replyError) {
+        console.error(`[ERROR] ${requestId} - Error sending auto-reply [Tenant: ${tenantId || 'unknown'}]:`, replyError instanceof Error ? replyError.message : 'Unknown error');
+      }
+      
     } else {
-      console.log(`[INFO] ${requestId} - No WhatsApp message data found in payload`);
+      console.log(`[INFO] ${requestId} - No WhatsApp message data found in payload [Tenant: ${tenantId || 'unknown'}]`);
     }
 
     console.log(`[RESPONSE] ${requestId} - Returning 200 OK`);
@@ -146,7 +181,9 @@ export const handler = async (
         processed: {
           phone,
           messageText,
-          hasMessage: !!(phone && messageText)
+          hasMessage: !!(phone && messageText),
+          phoneNumberId,
+          tenantId
         }
       })
     };

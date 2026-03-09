@@ -9,8 +9,11 @@ provider:
   stage: dev
   environment:
     NODE_ENV: ${self:provider.stage}
+    WHATSAPP_TOKEN: ${env:WHATSAPP_TOKEN, ''}
+    PHONE_NUMBER_ID: ${env:PHONE_NUMBER_ID, ''}
 
 plugins:
+  - serverless-dotenv-plugin
   - serverless-plugin-typescript
   - serverless-offline
 
