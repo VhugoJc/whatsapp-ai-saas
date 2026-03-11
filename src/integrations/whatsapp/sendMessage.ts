@@ -11,65 +11,6 @@ interface WhatsAppMessage {
   };
 }
 
-/**
- * Send a template message via WhatsApp Cloud API (for first contact)
- * @param phone - Phone number in international format
- * @param templateName - Name of approved template
- * @returns Promise with API response or error
- */
-export async function sendWhatsappTemplate(phone: string, templateName: string = 'hello_world'): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
-  const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID || '';
-  
-  if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
-    return { success: false, error: 'Missing WhatsApp configuration' };
-  }
-
-  const message: WhatsAppMessage = {
-    messaging_product: 'whatsapp',
-    to: phone,
-    template: {
-      name: templateName,
-      language: {
-        code: 'es_MX' // Spanish (Mexico)
-      }
-    }
-  };
-
-  const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
-  
-  try {
-    console.log(`[WhatsApp] Sending template "${templateName}" to ${phone}`);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[WhatsApp] Template API error (${response.status}):`, errorText);
-      return { success: false, error: `API error: ${response.status} ${errorText}` };
-    }
-
-    const result: WhatsAppApiResponse = await response.json();
-    const messageId = result.messages?.[0]?.id;
-    
-    console.log(`[WhatsApp] Template sent successfully - ID: ${messageId}`);
-    
-    return { success: true, messageId };
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[WhatsApp] Error sending template:', errorMessage);
-    return { success: false, error: errorMessage };
-  }
-}
-
 interface WhatsAppApiResponse {
   messaging_product: string;
   contacts: Array<{

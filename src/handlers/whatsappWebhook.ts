@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { sendWhatsappMessage } from '../integrations/whatsapp/sendMessage';
 import { resolveTenant } from '../tenants/resolveTenant';
+import { processMessage } from '../chat/agent';
 
 /**
  * WhatsApp Cloud API Webhook Payload Interfaces
@@ -143,20 +144,20 @@ export const handler = async (
     if (phone && messageText) {
       console.log(`[SUCCESS] ${requestId} - WhatsApp message processed: ${phone} -> "${messageText}" [Tenant: ${tenantId || 'unknown'}]`);
       
-      // Send automatic reply in Spanish
-      const replyMessage = "Hola 👋 soy el asistente de la academia. ¿En qué puedo ayudarte?";
+      // Process message using chatbot agent
+      const replyMessage = processMessage(tenantId || 'unknown', phone, messageText);
       
       try {
-        console.log(`[WhatsApp] Sending auto-reply to ${phone} for tenant: ${tenantId || 'unknown'}`);
+        console.log(`[WhatsApp] Sending agent response to ${phone} for tenant: ${tenantId || 'unknown'}`);
         const sendResult = await sendWhatsappMessage(phone, replyMessage);
         
         if (sendResult.success) {
-          console.log(`[SUCCESS] ${requestId} - Auto-reply sent successfully - Message ID: ${sendResult.messageId} [Tenant: ${tenantId || 'unknown'}]`);
+          console.log(`[SUCCESS] ${requestId} - Agent response sent successfully - Message ID: ${sendResult.messageId} [Tenant: ${tenantId || 'unknown'}]`);
         } else {
-          console.error(`[ERROR] ${requestId} - Failed to send auto-reply [Tenant: ${tenantId || 'unknown'}]:`, sendResult.error);
+          console.error(`[ERROR] ${requestId} - Failed to send agent response [Tenant: ${tenantId || 'unknown'}]:`, sendResult.error);
         }
       } catch (replyError) {
-        console.error(`[ERROR] ${requestId} - Error sending auto-reply [Tenant: ${tenantId || 'unknown'}]:`, replyError instanceof Error ? replyError.message : 'Unknown error');
+        console.error(`[ERROR] ${requestId} - Error sending agent response [Tenant: ${tenantId || 'unknown'}]:`, replyError instanceof Error ? replyError.message : 'Unknown error');
       }
       
     } else {
