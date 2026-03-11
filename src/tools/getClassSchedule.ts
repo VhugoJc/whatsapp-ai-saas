@@ -3,11 +3,7 @@
  * Returns general class schedules for the dance academy
  */
 
-export interface ToolResult {
-  success: boolean;
-  data?: any;
-  message?: string;
-}
+import { ToolResult } from './types';
 
 /**
  * Get the general class schedule for all dance classes

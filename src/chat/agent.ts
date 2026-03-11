@@ -56,8 +56,21 @@ export async function processMessage(tenantId: string, phone: string, text: stri
     }
   }
   
-  // Default response for unrecognized messages
-  const defaultResponse = "Hola 👋 Puedo ayudarte con información sobre horarios o precios de nuestras clases de baile. ¿Qué te interesa saber?";
-  console.log(`[Agent] No tool found, using default response`);
+  // Try FAQ search as fallback for unmatched queries
+  console.log(`[Agent] No specific tool found, trying FAQ search`);
+  try {
+    const faqResult = await executeTool('search_faq', { query: text });
+    
+    if (faqResult.success && faqResult.message) {
+      console.log(`[Agent] FAQ search completed`);
+      return faqResult.message;
+    }
+  } catch (error) {
+    console.error(`[Agent] FAQ search error:`, error);
+  }
+  
+  // Default response for completely unrecognized messages
+  const defaultResponse = "Hola 👋 Puedo ayudarte con información sobre horarios, precios, o responder preguntas frecuentes sobre las clases. ¿Qué te interesa saber?";
+  console.log(`[Agent] Using final default response`);
   return defaultResponse;
 }

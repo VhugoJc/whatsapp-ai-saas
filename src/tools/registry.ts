@@ -5,16 +5,14 @@
 
 import { getClassSchedule } from './getClassSchedule';
 import { getPrices } from './getPrices';
+import { searchFAQ } from './searchFAQ';
+import { ToolResult } from './types';
 
 export interface Tool {
   name: string;
   description: string;
   keywords: string[];
-  execute: (parameters?: any) => Promise<{
-    success: boolean;
-    data?: any;
-    message?: string;
-  }>;
+  execute: (parameters?: any) => Promise<ToolResult>;
 }
 
 /**
@@ -32,6 +30,12 @@ export const TOOL_REGISTRY: Record<string, Tool> = {
     description: 'Get pricing information for dance classes',
     keywords: ['precio', 'precios', 'costo', 'cuanto', 'cuánto', 'mensualidad', 'pago', 'cost', 'price'],
     execute: getPrices
+  },
+  search_faq: {
+    name: 'search_faq',
+    description: 'Search frequently asked questions database',
+    keywords: [], // No keywords - this tool is used as fallback
+    execute: searchFAQ
   }
 };
 
@@ -60,7 +64,7 @@ export function findTool(text: string): string | null {
  * @param parameters - Parameters to pass to the tool
  * @returns Tool execution result
  */
-export async function executeTool(toolName: string, parameters?: any) {
+export async function executeTool(toolName: string, parameters?: any): Promise<ToolResult> {
   const tool = TOOL_REGISTRY[toolName];
   
   if (!tool) {

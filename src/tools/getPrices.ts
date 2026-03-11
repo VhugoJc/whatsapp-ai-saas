@@ -3,11 +3,7 @@
  * Returns pricing information for dance classes
  */
 
-export interface ToolResult {
-  success: boolean;
-  data?: any;
-  message?: string;
-}
+import { ToolResult } from './types';
 
 /**
  * Get pricing information for dance classes
