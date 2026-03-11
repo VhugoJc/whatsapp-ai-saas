@@ -1,48 +1,22 @@
 /**
- * Simple Chatbot Agent with Intent Detection
+ * Simple Chatbot Agent with Tool-Based Architecture
  * Handles Mexican Spanish conversations for dance class business
  */
 
-interface Intent {
-  keywords: string[];
-  response: string;
-}
-
-const INTENTS: Record<string, Intent> = {
-  saludo: {
-    keywords: ['hola', 'buenas', 'hello', 'hey', 'buenos días', 'buenas tardes', 'buenas noches'],
-    response: "Hola 👋 ¿Quieres conocer nuestros horarios o precios de las clases?"
-  },
-  horarios: {
-    keywords: ['horarios', 'horario', 'clases', 'cuando', 'días', 'schedule', 'time', 'hora'],
-    response: `Las clases disponibles son:
-
-💃 Salsa - Lunes y Miércoles 7pm
-💃 Bachata - Martes y Jueves 7pm`
-  },
-  precios: {
-    keywords: ['precio', 'precios', 'costo', 'cuanto', 'cuánto', 'mensualidad', 'pago', 'cost', 'price'],
-    response: "La mensualidad cuesta $900 MXN."
-  }
-};
+import { findTool, executeTool } from '../tools/registry';
 
 /**
- * Detect intent from user message using keyword matching
+ * Detect greeting intent from user message
  * @param text - User's message text
- * @returns Detected intent name or null
+ * @returns True if greeting detected
  */
-function detectIntent(text: string): string | null {
+function isGreeting(text: string): boolean {
+  const greetingKeywords = ['hola', 'buenas', 'hello', 'hey', 'buenos días', 'buenas tardes', 'buenas noches'];
   const normalizedText = text.toLowerCase().trim();
   
-  for (const [intentName, intent] of Object.entries(INTENTS)) {
-    for (const keyword of intent.keywords) {
-      if (normalizedText.includes(keyword.toLowerCase())) {
-        return intentName;
-      }
-    }
-  }
-  
-  return null;
+  return greetingKeywords.some(keyword => 
+    normalizedText.includes(keyword.toLowerCase())
+  );
 }
 
 /**
@@ -52,19 +26,38 @@ function detectIntent(text: string): string | null {
  * @param text - User's message text
  * @returns Response text to send back
  */
-export function processMessage(tenantId: string, phone: string, text: string): string {
+export async function processMessage(tenantId: string, phone: string, text: string): Promise<string> {
   console.log(`[Agent] Processing message from ${phone} (tenant: ${tenantId}): "${text}"`);
   
-  const detectedIntent = detectIntent(text);
+  // Check for greeting first
+  if (isGreeting(text)) {
+    console.log(`[Agent] Greeting detected`);
+    return "Hola 👋 ¿Quieres conocer nuestros horarios o precios de las clases?";
+  }
   
-  if (detectedIntent && INTENTS[detectedIntent]) {
-    const response = INTENTS[detectedIntent].response;
-    console.log(`[Agent] Intent detected: ${detectedIntent}`);
-    return response;
+  // Try to find and execute a tool
+  const toolName = findTool(text);
+  
+  if (toolName) {
+    console.log(`[Agent] Tool found: ${toolName}`);
+    try {
+      const result = await executeTool(toolName);
+      
+      if (result.success && result.message) {
+        console.log(`[Agent] Tool executed successfully: ${toolName}`);
+        return result.message;
+      } else {
+        console.error(`[Agent] Tool execution failed: ${toolName}`, result.message);
+        return result.message || "Lo siento, ocurrió un error al procesar tu solicitud.";
+      }
+    } catch (error) {
+      console.error(`[Agent] Tool execution error:`, error);
+      return "Lo siento, ocurrió un error al procesar tu solicitud.";
+    }
   }
   
   // Default response for unrecognized messages
   const defaultResponse = "Hola 👋 Puedo ayudarte con información sobre horarios o precios de nuestras clases de baile. ¿Qué te interesa saber?";
-  console.log(`[Agent] No intent detected, using default response`);
+  console.log(`[Agent] No tool found, using default response`);
   return defaultResponse;
 }

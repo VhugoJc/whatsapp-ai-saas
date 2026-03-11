@@ -144,8 +144,8 @@ export const handler = async (
     if (phone && messageText) {
       console.log(`[SUCCESS] ${requestId} - WhatsApp message processed: ${phone} -> "${messageText}" [Tenant: ${tenantId || 'unknown'}]`);
       
-      // Process message using chatbot agent
-      const replyMessage = processMessage(tenantId || 'unknown', phone, messageText);
+      // Process message using chatbot agent (now async)
+      const replyMessage = await processMessage(tenantId || 'unknown', phone, messageText);
       
       try {
         console.log(`[WhatsApp] Sending agent response to ${phone} for tenant: ${tenantId || 'unknown'}`);
